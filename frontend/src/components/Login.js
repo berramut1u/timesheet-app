@@ -1,27 +1,43 @@
 import { useState } from "react";
-import { login, getDashboard } from "../api";
+import { login } from "../api";
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [message, setMessage] = useState("");
+    const navigate = useNavigate();
 
     const handleLogin = async (e) => {
         e.preventDefault();
-        const data = await login(email, password);
-        if (data.access_token) {
-            localStorage.setItem("token", data.access_token);
-            setMessage("Giriş başarılı! Şimdi dashboard verisini çekiyoruz...");
-            fetchDashboard(data.access_token);
-        } else {
-            setMessage(data.message || "Giriş başarısız.");
+        console.log("Login request started...");
+    
+        try {
+            const data = await login(email, password);
+            console.log("Login response:", data); // ✅ Log response for debugging
+    
+            if (data.access_token && data.role) {  // ✅ Ensure role is present
+                localStorage.setItem("token", data.access_token);
+                localStorage.setItem("role", data.role);  // ✅ Store role
+    
+                setMessage("Giriş başarılı! Yönlendiriliyorsunuz...");
+    
+                setTimeout(() => {
+                    if (data.role === "Yönetici") {
+                        navigate("/admin-dashboard");
+                    } else {
+                        navigate("/employee-dashboard");
+                    }
+                }, 500);
+            } else {
+                setMessage(data.message || "Giriş başarısız.");
+            }
+        } catch (error) {
+            console.error("Login error:", error);
+            setMessage("Sunucu hatası, lütfen tekrar deneyin.");
         }
     };
-
-    const fetchDashboard = async (token) => {
-        const data = await getDashboard(token);
-        setMessage(data.message || "Dashboard yüklenemedi.");
-    };
+    
 
     return (
         <div>
