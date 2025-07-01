@@ -21,13 +21,33 @@ export const login = async (email, password) => {
 // ✅ Add timesheet
 export const addTimesheet = async (project, hours, description, date) => {
     const token = localStorage.getItem("token");
+
+    const payload = {
+        project: String(project),
+        hours: Number(hours),
+        description: String(description),
+        date: String(date)
+        };
+
+    console.log("📤 Gönderilen Timesheet JSON:", JSON.stringify(payload, null, 2));  // ✅ Debugging için
+
     const response = await fetch(`${API_URL}/timesheet/add`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ project, hours, description, date }),
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(payload),  
     });
-    return response.json();
+
+    const responseData = await response.json();
+    console.log("📥 API Yanıtı:", responseData);  // ✅ API'den dönen cevabı gösterelim.
+
+    return responseData;
 };
+
+
+
 
 // ✅ Get user's timesheets
 export const getTimesheets = async () => {
