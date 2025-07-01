@@ -12,7 +12,7 @@ def signup():
     data = request.get_json()
     email = data.get("email")
     password = data.get("password")
-    role = data.get("role", "Çalışan")  # Default role: Çalışan
+    role = data.get("role", "Çalışan")
 
     if not email or not password:
         return jsonify({"message": "Email ve şifre zorunludur"}), 400
@@ -23,22 +23,23 @@ def signup():
     if User.query.filter_by(email=email).first():
         return jsonify({"message": "Bu email zaten kayıtlı"}), 400
 
+    # Create the user
     new_user = User(email=email, role=role)
     new_user.set_password(password)
     db.session.add(new_user)
     db.session.commit()
 
     access_token = create_access_token(
-        identity=str(user.id),               # ← just a string again
-        additional_claims={"role": user.role}
+        identity=str(new_user.id),
+        additional_claims={"role": new_user.role}
     )
-
 
     return jsonify({
         "message": "Kullanıcı başarıyla kaydedildi",
         "access_token": access_token,
         "role": new_user.role
     }), 201
+
 
 
 @auth_bp.route("/login", methods=["POST"])
