@@ -2,7 +2,7 @@ from flask import Flask
 from flask_cors import CORS
 from config import Config
 from models import db
-from routes import auth_bp, protected_bp
+from routes import auth_bp, protected_bp, admin_bp
 from timesheet_routes import timesheet_bp
 from flask_jwt_extended import JWTManager  
 from flask_migrate import Migrate
@@ -13,7 +13,7 @@ app.config.from_object(Config)
 
 # Database ve JWT başlatma
 db.init_app(app)
-jwt = JWTManager(app)  
+jwt = JWTManager(app)
 migrate = Migrate(app, db)
 
 # Veritabanını oluştur
@@ -24,7 +24,7 @@ with app.app_context():
 app.register_blueprint(auth_bp, url_prefix="/auth")
 app.register_blueprint(protected_bp, url_prefix="/protected")
 app.register_blueprint(timesheet_bp, url_prefix="/timesheet")
-
+app.register_blueprint(admin_bp,     url_prefix="/auth/admin")
 
 if __name__ == "__main__":
     app.run(debug=True)

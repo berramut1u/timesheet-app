@@ -87,3 +87,28 @@ export const getDashboard = async (token) => {
     });
     return response.json();
 };
+
+export const getAdminUsers = async () => {
+  const token = localStorage.getItem("token");
+  const res = await fetch(`${API_URL}/auth/admin/users`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return res.json();
+};
+
+export const getAdminTimesheets = async (userId) => {
+  const token = localStorage.getItem("token");
+  const res = await fetch(`${API_URL}/auth/admin/timesheets?user_id=${userId}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return res.json();
+};
+
+export const getAdminStats = async () => {
+  const token = localStorage.getItem("token");
+  const res = await fetch(`${API_URL}/auth/admin/stats`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return res.json();
+};
+

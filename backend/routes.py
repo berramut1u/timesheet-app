@@ -1,11 +1,19 @@
+from functools import wraps
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from flask_cors import cross_origin
+from flask_jwt_extended import (
+    create_access_token,
+    jwt_required,
+    get_jwt_identity,
+    get_jwt,                # ← you need this for require_admin
+)
+from sqlalchemy import func    # ← you need this for your stats query
 from models import db, User, Timesheet
 
 auth_bp = Blueprint("auth", __name__)
 protected_bp = Blueprint("protected", __name__)
 timesheet_bp = Blueprint("timesheet", __name__)
-
+admin_bp = Blueprint("admin", __name__)
 
 @auth_bp.route("/signup", methods=["POST"])
 def signup():
@@ -83,3 +91,45 @@ def get_user_info():
 
     return jsonify({"id": user.id, "email": user.email}), 200
 
+def require_admin(fn):
+    @wraps(fn)
+    @jwt_required()
+    def wrapper(*args, **kwargs):
+        claims = get_jwt()  # your “role” is in additional_claims
+        if claims.get("role") != "Yönetici":
+            return jsonify({"msg": "Yetkisiz işlem"}), 403
+        return fn(*args, **kwargs)
+    return wrapper
+
+# 1) List all employees
+@admin_bp.route("/users", methods=["GET", "OPTIONS"])
+@cross_origin(origins="*", allow_headers=["Content-Type","Authorization"])
+@require_admin
+def admin_list_users():
+    users = User.query.filter_by(role="Çalışan").all()  # Only employees
+    return jsonify([{"id":u.id,"email":u.email,"role":u.role} for u in users]), 200
+
+# 2) List timesheets
+@admin_bp.route("/timesheets", methods=["GET", "OPTIONS"])
+@cross_origin(origins="*", allow_headers=["Content-Type","Authorization"])
+@require_admin
+def admin_list_timesheets():
+    user_id = request.args.get("user_id", type=int)
+    query = Timesheet.query.join(User).filter(User.role=="Çalışan")
+    if user_id:
+        query = query.filter(Timesheet.user_id==user_id)
+    sheets = query.order_by(Timesheet.date).all()
+    return jsonify([{
+        "id": t.id, "user_id": t.user_id, "project": t.project,
+        "hours": t.hours, "date": str(t.date), "description": t.description
+    } for t in sheets]), 200
+
+# 3) Stats
+@admin_bp.route("/stats", methods=["GET", "OPTIONS"])
+@cross_origin(origins="*", allow_headers=["Content-Type","Authorization"])
+@require_admin
+def admin_stats():
+    results = db.session.query(
+        Timesheet.user_id, func.sum(Timesheet.hours).label("total_hours")
+    ).group_by(Timesheet.user_id).all()
+    return jsonify([{"user_id":uid,"total_hours":h} for uid,h in results]),200
