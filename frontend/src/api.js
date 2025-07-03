@@ -1,13 +1,14 @@
 const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:5000";
 
-export const signup = async (email, password, role) => {
-    const response = await fetch(`${API_URL}/auth/signup`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, role }),
-    });
-    return response.json();
+export const signup = async (first_name, last_name, email, password, role) => {
+  const res = await fetch(`${API_URL}/auth/signup`, {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ first_name, last_name, email, password, role })
+  });
+  return res.json();
 };
+
 
 export const login = async (email, password) => {
     const response = await fetch(`${API_URL}/auth/login`, {
