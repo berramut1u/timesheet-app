@@ -8,10 +8,6 @@ timesheet_bp = Blueprint("timesheet", __name__)
 @timesheet_bp.route("/add", methods=["POST"])
 @jwt_required()
 def add_timesheet():
-    print("🔍 FULL REQUEST RECEIVED:")
-    print("📌 Headers:", request.headers)
-    print("📌 JSON Body:", request.get_json())
-
     data = request.get_json()
     if not data:
         return jsonify({"message": "Hatalı JSON formatı, boş veri alındı!"}), 400
@@ -22,8 +18,6 @@ def add_timesheet():
     hours = data.get("hours")
     description = data.get("description", "")
     date = data.get("date")
-
-    print(f"✅ Extracted Values - User ID: {user_id}, Project: {project}, Hours: {hours}, Description: {description}, Date: {date}")
 
     if not isinstance(project, str):
         return jsonify({"message": "Project must be a string"}), 400
@@ -71,13 +65,10 @@ def get_my_timesheets():
     } for t in timesheets]), 200
 
 
-
 # Edit a timesheet entry
 @timesheet_bp.route("/edit/<int:id>", methods=["PUT"])
 @jwt_required()
 def edit_timesheet(id):
-    print("🔐 JWT Identity Raw:", get_jwt_identity())
-
     user_id = int(get_jwt_identity())
 
     timesheet = Timesheet.query.get(id)

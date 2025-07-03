@@ -18,7 +18,7 @@ export const login = async (email, password) => {
     return response.json();
 };
 
-// ✅ Add timesheet
+// Add timesheet
 export const addTimesheet = async (project, hours, description, date) => {
     const token = localStorage.getItem("token");
 
@@ -29,7 +29,7 @@ export const addTimesheet = async (project, hours, description, date) => {
         date: String(date)
         };
 
-    console.log("📤 Gönderilen Timesheet JSON:", JSON.stringify(payload, null, 2));  // ✅ Debugging için
+    console.log("📤 Gönderilen Timesheet JSON:", JSON.stringify(payload, null, 2));  // Debugging için
 
     const response = await fetch(`${API_URL}/timesheet/add`, {
         method: "POST",
@@ -41,7 +41,7 @@ export const addTimesheet = async (project, hours, description, date) => {
     });
 
     const responseData = await response.json();
-    console.log("📥 API Yanıtı:", responseData);  // ✅ API'den dönen cevabı gösterelim.
+    console.log("📥 API Yanıtı:", responseData);  // API'den dönen cevabı gösterelim.
 
     return responseData;
 };
@@ -49,7 +49,7 @@ export const addTimesheet = async (project, hours, description, date) => {
 
 
 
-// ✅ Get user's timesheets
+// Get user's timesheets
 export const getTimesheets = async () => {
     const token = localStorage.getItem("token");
     const response = await fetch(`${API_URL}/timesheet/my`, {
@@ -58,7 +58,7 @@ export const getTimesheets = async () => {
     return response.json();
 };
 
-// ✅ Edit a timesheet
+// Edit a timesheet
 export const editTimesheet = async (id, updatedData) => {
     const token = localStorage.getItem("token");
     const response = await fetch(`${API_URL}/timesheet/edit/${id}`, {
@@ -69,7 +69,7 @@ export const editTimesheet = async (id, updatedData) => {
     return response.json();
 };
 
-// ✅ Delete a timesheet
+// Delete a timesheet
 export const deleteTimesheet = async (id) => {
     const token = localStorage.getItem("token");
     const response = await fetch(`${API_URL}/timesheet/delete/${id}`, {

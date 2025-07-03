@@ -5,9 +5,9 @@ from flask_jwt_extended import (
     create_access_token,
     jwt_required,
     get_jwt_identity,
-    get_jwt,                # ← you need this for require_admin
+    get_jwt,                
 )
-from sqlalchemy import func    # ← you need this for your stats query
+from sqlalchemy import func    
 from models import db, User, Timesheet
 
 auth_bp = Blueprint("auth", __name__)
@@ -61,14 +61,14 @@ def login():
         return jsonify({"message": "Geçersiz e-posta veya şifre"}), 401
 
     access_token = create_access_token(
-        identity=str(user.id),               # ← just a string again
+        identity=str(user.id),               
         additional_claims={"role": user.role}
     )
 
 
     return jsonify({
         "access_token": access_token,
-        "role": user.role  # ✅ Add role to response
+        "role": user.role  
     }), 200
 
 
@@ -84,7 +84,7 @@ def dashboard():
 @jwt_required()
 def get_user_info():
     identity = get_jwt_identity()
-    user_id = identity["id"]  # ✅ now this works
+    user_id = identity["id"]  
 
     if not user:
         return jsonify({"message": "Kullanıcı bulunamadı"}), 404
@@ -95,7 +95,7 @@ def require_admin(fn):
     @wraps(fn)
     @jwt_required()
     def wrapper(*args, **kwargs):
-        claims = get_jwt()  # your “role” is in additional_claims
+        claims = get_jwt()  
         if claims.get("role") != "Yönetici":
             return jsonify({"msg": "Yetkisiz işlem"}), 403
         return fn(*args, **kwargs)
