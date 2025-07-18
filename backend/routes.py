@@ -18,14 +18,12 @@ admin_bp = Blueprint("admin", __name__)
 @auth_bp.route("/signup", methods=["POST"])
 def signup():
     data = request.get_json()
-    first = data.get("first_name")
-    last  = data.get("last_name")
     email = data.get("email")
     password = data.get("password")
     role = data.get("role", "Çalışan")
 
-    if not first or not last or not email or not password:
-        return jsonify({"message": "Ad, soyad, email ve şifre zorunludur"}), 400
+    if not email or not password:
+        return jsonify({"message": "Email ve şifre zorunludur"}), 400
 
     if role not in ["Yönetici", "Çalışan"]:
         return jsonify({"message": "Geçersiz rol seçimi"}), 400
@@ -34,7 +32,7 @@ def signup():
         return jsonify({"message": "Bu email zaten kayıtlı"}), 400
 
     # Create the user
-    new_user = User(first_name=first, last_name=last, email=email, role=role)
+    new_user = User(email=email, role=role)
     new_user.set_password(password)
     db.session.add(new_user)
     db.session.commit()
@@ -104,17 +102,12 @@ def require_admin(fn):
     return wrapper
 
 # 1) List all employees
-@admin_bp.route("/users", methods=["GET"])
+@admin_bp.route("/users", methods=["GET", "OPTIONS"])
+@cross_origin(origins="*", allow_headers=["Content-Type","Authorization"])
 @require_admin
 def admin_list_users():
-    users = User.query.filter_by(role="Çalışan").all()
-    return jsonify([{
-      "id": u.id,
-      "first_name": u.first_name,
-      "last_name":  u.last_name,
-      "email": u.email
-    } for u in users]), 200
-
+    users = User.query.filter_by(role="Çalışan").all()  # Only employees
+    return jsonify([{"id":u.id,"email":u.email,"role":u.role} for u in users]), 200
 
 # 2) List timesheets
 @admin_bp.route("/timesheets", methods=["GET", "OPTIONS"])
@@ -132,16 +125,11 @@ def admin_list_timesheets():
     } for t in sheets]), 200
 
 # 3) Stats
-@admin_bp.route("/stats", methods=["GET"])
+@admin_bp.route("/stats", methods=["GET", "OPTIONS"])
+@cross_origin(origins="*", allow_headers=["Content-Type","Authorization"])
 @require_admin
 def admin_stats():
     results = db.session.query(
-       User.first_name, User.last_name,
-       func.sum(Timesheet.hours).label("total_hours")
-    ).join(Timesheet).filter(User.role=="Çalışan") \
-     .group_by(User.id).all()
-
-    return jsonify([{
-      "name": f"{fn} {ln}",
-      "total_hours": th
-    } for fn, ln, th in results]), 200
+        Timesheet.user_id, func.sum(Timesheet.hours).label("total_hours")
+    ).group_by(Timesheet.user_id).all()
+    return jsonify([{"user_id":uid,"total_hours":h} for uid,h in results]),200
