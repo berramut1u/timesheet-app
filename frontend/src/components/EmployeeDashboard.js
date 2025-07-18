@@ -1,4 +1,3 @@
-// src/components/EmployeeDashboard.jsx
 import { useState, useEffect } from "react";
 import {
   addTimesheet,
@@ -12,6 +11,7 @@ import Navbar from "./Navbar";
 export default function EmployeeDashboard() {
   const [timesheets, setTimesheets] = useState([]);
   const [editingTimesheet, setEditingTimesheet] = useState(null);
+  const [addingTimesheet, setAddingTimesheet] = useState(false);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -61,7 +61,31 @@ export default function EmployeeDashboard() {
   };
 
   // ─────────────────────────────────────────────────────────────
-  // If we're editing, only render the edit form (with navbar)
+  // If adding, show only the add form
+  if (addingTimesheet) {
+    return (
+      <>
+        <Navbar />
+        <div className="min-h-screen bg-gray-50 p-6 flex items-start justify-center">
+          <div className="w-full max-w-md bg-white p-6 rounded-xl shadow-md">
+            <h3 className="text-xl font-semibold mb-4 text-center">
+              Yeni Timesheet Ekle
+            </h3>
+            <TimesheetForm
+              onSuccess={() => {
+                loadTimesheets();
+                setAddingTimesheet(false);
+              }}
+              onCancel={() => setAddingTimesheet(false)}
+            />
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // If editing, show only the edit form
   if (editingTimesheet) {
     return (
       <>
@@ -85,7 +109,7 @@ export default function EmployeeDashboard() {
   }
 
   // ─────────────────────────────────────────────────────────────
-  // Otherwise, render the normal add + list view
+  // Otherwise, render the dashboard normally
   return (
     <>
       <Navbar />
@@ -94,11 +118,17 @@ export default function EmployeeDashboard() {
           Çalışan Paneli
         </h2>
 
-        <div className="max-w-4xl mx-auto bg-white p-6 mb-6 rounded-xl shadow-md">
-          <h3 className="text-xl font-semibold mb-4">Yeni Timesheet Ekle</h3>
-          <TimesheetForm onSuccess={loadTimesheets} />
+        {/* Button to open Add Timesheet form */}
+        <div className="max-w-4xl mx-auto mb-6 flex justify-center">
+          <button
+            onClick={() => setAddingTimesheet(true)}
+            className="bg-gradient-to-r from-blue-500 to-purple-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg transition"
+          >
+            + Yeni Timesheet Ekle
+          </button>
         </div>
 
+        {/* Timesheet List */}
         <div className="max-w-4xl mx-auto bg-white p-6 rounded-xl shadow-md">
           <h3 className="text-xl font-semibold mb-4">Timesheet Kayıtlarınız</h3>
           {message && <p className="text-red-600 mb-4">{message}</p>}
@@ -128,13 +158,13 @@ export default function EmployeeDashboard() {
                   <div className="mt-4 md:mt-0 flex space-x-3">
                     <button
                       onClick={() => setEditingTimesheet(t)}
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition"
+                      className="bg-gradient-to-r from-blue-500 to-purple-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition"
                     >
                       Düzenle
                     </button>
                     <button
                       onClick={() => handleDeleteTimesheet(t.id)}
-                      className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition"
+                      className="bg-gradient-to-r from-purple-500 to-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition"
                     >
                       Sil
                     </button>

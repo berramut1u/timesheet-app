@@ -7,7 +7,7 @@ from flask_jwt_extended import (
     get_jwt_identity,
     get_jwt,                
 )
-from sqlalchemy import func    
+from sqlalchemy import func, or_   
 from models import db, User, Timesheet
 
 auth_bp = Blueprint("auth", __name__)
@@ -19,11 +19,13 @@ admin_bp = Blueprint("admin", __name__)
 def signup():
     data = request.get_json()
     email = data.get("email")
+    first = data.get("first_name")
+    last  = data.get("last_name")
     password = data.get("password")
     role = data.get("role", "Çalışan")
 
-    if not email or not password:
-        return jsonify({"message": "Email ve şifre zorunludur"}), 400
+    if not first or not last or not email or not password:
+        return jsonify({"message": "Ad, soyad, email ve şifre zorunludur"}), 400
 
     if role not in ["Yönetici", "Çalışan"]:
         return jsonify({"message": "Geçersiz rol seçimi"}), 400
@@ -32,7 +34,7 @@ def signup():
         return jsonify({"message": "Bu email zaten kayıtlı"}), 400
 
     # Create the user
-    new_user = User(email=email, role=role)
+    new_user = User(first_name=first, last_name=last, email=email, role=role)
     new_user.set_password(password)
     db.session.add(new_user)
     db.session.commit()
@@ -103,11 +105,21 @@ def require_admin(fn):
 
 # 1) List all employees
 @admin_bp.route("/users", methods=["GET", "OPTIONS"])
-@cross_origin(origins="*", allow_headers=["Content-Type","Authorization"])
+@cross_origin(origins="*", allow_headers=["Content-Type","Authorization"], methods=["GET","OPTIONS"])
 @require_admin
 def admin_list_users():
-    users = User.query.filter_by(role="Çalışan").all()  # Only employees
-    return jsonify([{"id":u.id,"email":u.email,"role":u.role} for u in users]), 200
+    users = User.query.filter(User.role == "Çalışan").all()  # Only employees
+
+    return jsonify([{
+        "id":         u.id,
+        "first_name": u.first_name,
+        "last_name":  u.last_name,
+        "email":      u.email,
+        "role":       u.role
+    } for u in users]), 200
+
+
+
 
 # 2) List timesheets
 @admin_bp.route("/timesheets", methods=["GET", "OPTIONS"])
@@ -125,11 +137,45 @@ def admin_list_timesheets():
     } for t in sheets]), 200
 
 # 3) Stats
-@admin_bp.route("/stats", methods=["GET", "OPTIONS"])
-@cross_origin(origins="*", allow_headers=["Content-Type","Authorization"])
+@admin_bp.route("/stats", methods=["GET"])
 @require_admin
 def admin_stats():
     results = db.session.query(
-        Timesheet.user_id, func.sum(Timesheet.hours).label("total_hours")
-    ).group_by(Timesheet.user_id).all()
-    return jsonify([{"user_id":uid,"total_hours":h} for uid,h in results]),200
+        User.first_name,
+        User.last_name,
+        User.email,
+        func.sum(Timesheet.hours).label("total_hours")
+    ).join(Timesheet).filter(User.role == "Çalışan") \
+     .group_by(User.id).all()
+
+    return jsonify([
+        {
+            "name": f"{fn} {ln}",
+            "email": email,  
+            "total_hours": th
+        } for fn, ln, email, th in results
+    ]), 200
+
+
+
+@admin_bp.route("/users/<int:user_id>", methods=["OPTIONS"])
+@cross_origin(origins="*", allow_headers=["Content-Type","Authorization"], methods=["DELETE","OPTIONS"])
+def admin_delete_user_options(user_id):
+    return "", 200
+
+@admin_bp.route("/users/<int:user_id>", methods=["DELETE"])
+@require_admin
+def admin_delete_user(user_id):
+    current_user_id = get_jwt_identity()  # Extract logged-in user's ID
+    user = User.query.get(user_id)
+
+    if not user:
+        return jsonify({"error": "Kullanıcı bulunamadı"}), 404
+
+    #  Allow deleting self, but block deleting other admins
+    if user.role == "Admin" and user.id != current_user_id:
+        return jsonify({"error": "Diğer admin hesapları silinemez"}), 403
+
+    db.session.delete(user)
+    db.session.commit()
+    return jsonify({"success": True}), 200

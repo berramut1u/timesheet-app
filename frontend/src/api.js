@@ -1,12 +1,12 @@
 const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:5000";
 
-export const signup = async (email, password, role) => {
-    const response = await fetch(`${API_URL}/auth/signup`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, role }),
-    });
-    return response.json();
+export const signup = async (first_name, last_name, email, password, role) => {
+  const res = await fetch(`${API_URL}/auth/signup`, {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ first_name, last_name, email, password, role })
+  });
+  return res.json();
 };
 
 export const login = async (email, password) => {
@@ -29,8 +29,6 @@ export const addTimesheet = async (project, hours, description, date) => {
         date: String(date)
         };
 
-    console.log("📤 Gönderilen Timesheet JSON:", JSON.stringify(payload, null, 2));  // Debugging için
-
     const response = await fetch(`${API_URL}/timesheet/add`, {
         method: "POST",
         headers: {
@@ -41,7 +39,6 @@ export const addTimesheet = async (project, hours, description, date) => {
     });
 
     const responseData = await response.json();
-    console.log("📥 API Yanıtı:", responseData);  // API'den dönen cevabı gösterelim.
 
     return responseData;
 };
@@ -112,3 +109,15 @@ export const getAdminStats = async () => {
   return res.json();
 };
 
+// Delete a user (admin only)
+export const deleteAdminUser = async (userId) => {
+  const token = localStorage.getItem("token");
+  const res = await fetch(`${API_URL}/auth/admin/users/${userId}`, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return res.json();
+};
